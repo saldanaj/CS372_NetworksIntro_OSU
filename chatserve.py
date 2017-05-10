@@ -6,6 +6,7 @@ import string
 import io
 import sys 
 from thread import * 
+from socket import * 
 
 # Student: Joaquin Saldana 
 # Class: CS372 - Intro to Networks 
@@ -31,10 +32,9 @@ def receiveMessage(connectionSocket):
         	print("Error in receiving message from client")
         	return -1
 
-    	if(messageReceived == "/quit"):
-		print("Chat server has been terminated")
+    	if(messageReceived == "quit"):
+		print("Chat server has been terminated by the client")
         	return 1
-        	#connectionSocket.close()
 		
 	print messageReceived
     	return 0
@@ -61,13 +61,11 @@ def sendMessage(connectionSocket, serverHandle):
 		# and the user's input
 		messageToSend = serverHandle + ": " + inputByUser + "\0"
 	 
-		if(inputByUser == "/quit"):
+		if(inputByUser == "quit"):
 			connectionSocket.send(messageToSend)
         		print("Connection has been terminated by the server")
         		return 1
         
-        	# connectionSocket.send("/quit\0")
-	
 		# send the message from the server user
 		connectionSocket.send(messageToSend)
     	return 0
@@ -126,7 +124,7 @@ def main():
     	print("We are assigning port number " + str(portNumber) + " to the socket")
 
     	# initiating the socket as written in chapter 2 of the book
-    	from socket import *
+    	# from socket import *
     	serverSocket = socket(AF_INET, SOCK_STREAM)
     	serverSocket.bind(('flip3',portNumber))
     	serverSocket.listen(5)
@@ -139,13 +137,6 @@ def main():
 	
         	connectionSocket, addr = serverSocket.accept()
 	
-        	#start_new_thread(receiveMessage, (connectionSocket,))
-        	#start_new_thread(sendMessage, (connectionSocket, serverHandle))
-	
-        	#receiveMessage(connectionSocket)
-        	#sendMessage(connectionSocket, serverHandle)
-
-
         	value = chat(connectionSocket, serverHandle)
 
         	if(value == 1):

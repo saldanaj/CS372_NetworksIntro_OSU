@@ -2,14 +2,12 @@
  Student: Joaquin Saldana 
  Course: CS372 / Intro to Networks 
  
- Description: 
- This is the "chat client" program for Assignment 1.  This program is meant to act as the client to
+ Description: This is the "chat client" program for Assignment 1.  This program is meant to act as the client to
  a chat program.  
  
  In order to connect to the server you will need to enter the hostname and port number on the command 
  line when you run the executable file.
  */
-
 
 // sections of this code were directly sourced from Beej's Guide to Network Programming
 // http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
@@ -30,59 +28,19 @@
 
 // will need to send a max number of 500 characters, meaning
 // we will need a max of 500 data bytes
-#define MAXDATASIZE 500
+#define MAXDATASIZE 515
 #define TRUE 1
 #define FALSE 0
 
-// function prototype
+
+// =====================================================
+// FUNCTION PROTOTYPES
 // This function is a direct suggestion from http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html#connect
-// int sendall(int socketFD, char * buff, int *len);
 
+void getHandle(char * handle);
+void chat(int socketFD, char * handle);
 
-void* receiveMessage(void * numberReturned)
-{
-    int socketFD = *((int *) numberReturned);
-    
-    // buffer to hold the message received
-    char messageReceived[511];
-    
-    // set the buffer to contain null terminators
-    memset(messageReceived, '\0', sizeof(messageReceived));
-    
-    // variables within the function itself
-    int quit = FALSE;
-    int charsRead;
-    
-    // infinite while loop that checks for the following
-    // 1. if the number of bytes received is less than 0 it means there was an error
-    // 2. if the message received was "quit" then it initiates a graceful shutdown of the chat client
-    // 3. else, just print the message received to the console
-    while(quit == FALSE)
-    {
-        charsRead = recv(socketFD, &messageReceived, sizeof(messageReceived) - 1, 0);
-        
-        if(charsRead < 0)
-        {
-            error("Error receiving the message from the server");
-        }
-        
-        // In the event that the chat server sends a quit to terminate the chat
-        if(strcmp(messageReceived, "/quit\0") == 0)
-        {
-            printf("\nChat has been terminated\n");
-            send(socketFD, "/quit", 5, 0);
-            quit = TRUE;
-            exit(0);
-        }
-        else
-        {
-            // print the message received from the server
-            printf("%s\n", messageReceived);
-        }
-    }
-}
-
-void sendMessage(int socketFD, char * clientHandle);
+// =====================================================
 
 int main(int argc, char * argv[])
 {
@@ -97,13 +55,14 @@ int main(int argc, char * argv[])
     
     //variables unique to this program
     char handleName[11];
+    memset(handleName, '\0', sizeof(handleName));
+
     
     // Introduction to the program
     // Here we will greet the user and ask he enter his handle
     printf("Welcome to the chat client.  We hope you find it entertaining for both you and your friend.\n");
-    printf("Please enter your handle: ");
-    scanf("%s", handleName);
-    strcat(handleName, ": ");
+    
+    getHandle(handleName);
     
     // variables that will hold file descriptors
     // int quit = TRUE;
@@ -164,45 +123,7 @@ int main(int argc, char * argv[])
     
     printf("We are now connected to the server ... \n");
     
-    
-    /*
-    
-    pthread_t messageReceivedID;
-    
-    int n = pthread_create(&messageReceivedID, NULL, receiveMessage, (void*) &sockfd);
-
-    if(n)
-    {
-        printf("Error creating mesasge receive thread");
-        exit(1);
-    }
-    
-    sendMessage(sockfd, handleName); 
-    */
-    
-    
-    // SENDING DATA TO HOST
-    
-    memset(buffer, '\0', sizeof(buffer));
-    memset(tempBuffer, '\0', sizeof(tempBuffer));
-    printf("%s", handleName);
-    fgets(tempBuffer, sizeof(tempBuffer) - 1, stdin);
-    buffer[strcspn(buffer, "\n")] = '\0';
-    strcpy(buffer, handleName);
-    strcat(buffer, tempBuffer);
-    
-    charsWritten = send(sockfd, buffer, strlen(buffer), 0);
-
-    // RECEIVING DATA FROM HOST
-    
-    memset(buffer, '\0', sizeof(buffer));
-    
-    charsRead = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
-    printf("%s", buffer);
-
-    close(sockfd);
-    
-    printf("Thank you for using this chat program.  Goodbye!\n");
+    chat(sockfd, handleName);
     
     return 0;
 }
@@ -212,217 +133,183 @@ int main(int argc, char * argv[])
 // ==================================
 
 /*
- Function: receiveMessage(void* numberReturned)
- Arguments: Void * , later casted as an int within the function
+ Function: getHandle(char * handle)
+ Arguments: char * - the handle char array declared in main int
  Return: N/A
- Description: this function incorporates an infinite loop to receive chat messages from
- the chatserver until the chat is ended
+ Description: this function prompts the user to enter the user handle they wish to use 
+ for the chat client
  */
 
-/*
-void* receiveMessage(void * numberReturned)
+void getHandle(char * handle)
 {
-    int socketFD = *((int *) numberReturned);
-    
-    // buffer to hold the message received
-    char messageReceived[511];
-    
-    // set the buffer to contain null terminators
-    memset(messageReceived, '\0', sizeof(messageReceived));
-    
-    // variables within the function itself
-    int quit = FALSE;
-    int charsRead;
-    
-    // infinite while loop that checks for the following
-    // 1. if the number of bytes received is less than 0 it means there was an error
-    // 2. if the message received was "quit" then it initiates a graceful shutdown of the chat client
-    // 3. else, just print the message received to the console
-    while(quit == FALSE)
+    // inner function variables
+    int validInput = FALSE;
+    char * position;
+
+    // while loop used to check that the user entered a usable handle
+    while(validInput == FALSE)
     {
-        charsRead = recv(socketFD, &messageReceived, sizeof(messageReceived) - 1, 0);
-        
-        if(charsRead < 0)
-        {
-            error("Error receiving the message from the server");
-        }
-        
-        // In the event that the chat server sends a quit to terminate the chat
-        if(strcmp(messageReceived, "/quit\0") == 0)
-        {
-            printf("\nChat has been terminated\n");
-            send(socketFD, "/quit", 5, 0);
-            quit = TRUE;
-            exit(0);
-        }
-        
-        // print the message received from the server
-        printf("%s\n", messageReceived);
-    }
-}
- */
+        // Here we will greet the user and ask he enter his handle
+        printf("Please enter your handle: ");
+        fgets(handle, 11, stdin);
 
+        //        if((position = strchr(handle, '\0')) == NULL)
 
-/*
- Function: sendMessage(int socketFD, char * clientHandle)
- Arguments: socketFD - the socket file descriptor returned from creating the socket, & 
-            char * clientHandle - reference to char array holding the client's chat handle
- Return: N/A
- Description: this function incorporates an infinite loop to send messages to the chat server.
- */
-
-void sendMessage(int socketFD, char * clientHandle)
-{
-    // input buffer declarations
-    char message[strlen(clientHandle) + 500], userInput[500];
-    
-    // function variables
-    int quit = FALSE;
-    int charsWritten;
-    
-    while(quit == FALSE)
-    {
-        // set null terminators in all of the buffers declared earlier
-        memset(message, '\0', sizeof(message));
-        memset(userInput, '\0', sizeof(userInput));
+        char test = handle[10];
         
-        // get the user input from stdin
-        fgets(userInput, sizeof(userInput) - 1, stdin);
-        strcat(userInput, '\0');
-        
-        // set up the mesasge to send
-        strcpy(message, clientHandle);
-        strcat(message, userInput);
-        
-        // check if user wants to quit
-        if(strcmp(userInput, "/quit\n") != 0)
+        if(test != '\0')
         {
-            charsWritten = send(socketFD, message, strlen(message), 0);
-            
-            if(charsWritten < 0)
-            {
-                printf("Error sending message to server");
-                quit = TRUE;
-            }
+            printf("ERROR: handle is too long.  Max length is 10 characters\n");
+            memset(handle, '\0', sizeof(handle));
         }
         else
         {
-            printf("\nChat has been terminated\n");
-            send(socketFD, "/quit\n", 5, 0);
-            quit = TRUE;
+            validInput = TRUE;
+            
+            // changes the last character from a new line character to a NULL character
+            // if there is a new line character.  If there isn't it means the user
+            // used the entire handle buffer
+            if((position = strchr(handle, '\n')) != NULL)
+            {
+                *position = '\0';
+            }
         }
     }
 }
 
 /*
- // This function attempts to ensure all of the characters entered are sent to the server
- 
- int sendall(int s, char * buff, int *len)
- {
- int total = 0;
- int bytesLeft = *len;
- int n;
- 
- 
- while(total < *len)
- {
- n = send(s, buff+total, bytesLeft, 0);
- 
- if(n == -1)
- {
- break;
- }
- 
- if(n < *len)
- {
- printf("We only sent a partial portion of the message.  We will try to finish sending the rest\n");
- }
- 
- total+=n;
- bytesLeft -=n;
- }
- 
- *len = total;
- 
- return n==-1? -1:0;
- }
- 
- 
- 
- // previously in my main function 
- 
- // while the user has not typed "\quit" into the command line
- while(quit == TRUE)
- {
- // make sure to enter null terminators in the char array
- memset(buffer, '\0', sizeof(buffer));
- 
- // have the user enter the text they wish to send to the server/host b
- printf("%s: ",handleName);
- scanf("%s", buffer);
- 
- if(strcmp(buffer, "\\quit") == 0)
- {
- // terminate the infinite while loop
- quit = FALSE;
- }
- else
- {
- // get the users input
- fgets(buffer, sizeof(buffer) - 1, stdin);
- //remove the trailing "enter" which is the \n char
- buffer[strcspn(buffer, "\n")] = '\0';
- 
- if(sendall(sockfd, buffer, strlen(buffer)) < 0)
- {
- error("Error writing to socket\n");
- }
- 
- // now get the return message
- memset(buffer, '\0', sizeof(buffer));
- 
- // read data from the socket
- charsRead = recv(sockfd, buffer, sizeof(buffer) - 1 , 0);
- 
- printf("Host B: %s", buffer);
- }
- 
- }
- 
- 
- 
- 
- 
+ Function: chat(int socket, char * handle)
+ Arguments: int socket file descripter, char pointer to user's handle
+ Return: N/A
+ Description: this function will operate the writing and receiving of messages between the sockets
+ connected for the chat program
  */
 
+void chat(int socketFD, char * handle)
+{
+    // inner function variables
+    ssize_t numberOfBytes;
+    char receivedMessage[MAXDATASIZE];
+    char input[MAXDATASIZE];
+    char sentMessage[MAXDATASIZE];
+    int validInput = FALSE;
+    int quit = FALSE;
+    int temp = 0;
+    char * terminate = ": \quit";
+    char * terminateSent = "quit";
+    
+    // Infinite loop that only terminates upon the user writing in quit
+    while(quit != TRUE)
+    {
+        // set all of the buffer's to have null terminaters
+        memset(input, '\0', MAXDATASIZE);
+        memset(sentMessage, '\0', MAXDATASIZE);
+        
+        // check that the user did not input a much larger text than allowed
+        while(validInput != TRUE)
+        {
+        
+            printf("%s: ", handle);
+            fgets(input, MAXDATASIZE, stdin);
+            
+            temp = strlen(input);
+            
+            if(temp > MAXDATASIZE)
+            {
+                printf("Error: Your input is too large\n");
+            }
+            else
+            {
+                validInput = TRUE;
+            }
+        }
+        
+        // reset the boolean value
+        validInput = FALSE;
+        
+        // take out the last character which is a new line character
+        // to a null terminator
+        char *position;
+        
+        if((position = strchr(input, '\n')) != NULL)
+        {
+            *position = '\0';
+        }
+        
+        temp = strlen(input);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // going to check if the string entered by the client
+        // is intenting to "quit" the chat program
+        const char s[2] = "\n";
+        char * subString_1 = strtok(input, s);
+        
+        // check if the user want's to quit the chat
+//        if(strcmp(input, terminate) == 0)
+        if(strcmp(subString_1, terminateSent) == 0)
+        {
+            printf("Connection closed by client\n");
+            
+            numberOfBytes = write(socketFD, input, temp);
+            
+            quit = TRUE;
+            
+            break;
+        }
+        
+        // put together the message destined for the other endpoint
+        temp = sprintf(sentMessage, "%s: %s\n", handle, input);
+        
+        // check for error when concatenating
+        if(temp < 0)
+        {
+            printf("Error when concatenating send message together\n");
+        }
+        
+        // write to the other socket
+        numberOfBytes = write(socketFD, sentMessage, temp);
+        
+        if(numberOfBytes < 0)
+        {
+            printf("Error when writing/sending to the server\n");
+        }
+        
+        // ==================================================
+        // RECEIVING MESSAGE portion of the code
+        
+        memset(receivedMessage, '\0', MAXDATASIZE);
+        
+        numberOfBytes = recv(socketFD, receivedMessage, MAXDATASIZE, 0);
+        
+        // going to break apart the string received to see if the server want's to quit
+        char * subString = strchr(receivedMessage, ':');
+        subString = strtok(subString, s);
+        
+        if(numberOfBytes < MAXDATASIZE)
+        {
+            if(strcmp(subString, terminate) == 0)
+            {
+                printf("Server requested to quit the chat\n");
+                quit = TRUE;
+            }
+            else if(numberOfBytes == -1)
+            {
+                printf("Received message error when receiving from server\n");
+            }
+            else if(0 < numberOfBytes < MAXDATASIZE)
+            {
+                printf("%s\n",receivedMessage);
+            }
+            else if(numberOfBytes == 0)
+            {
+                printf("End of server data\n");
+                quit = TRUE;
+            }
+        }
+        
+    }
+    
+    close(socketFD);
+    
+    return;
+    
+}
