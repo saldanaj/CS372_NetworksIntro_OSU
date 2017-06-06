@@ -1,0 +1,59 @@
+Student: Joaquin Saldana 
+Course: CS372 / Intro to Networks 
+Assignment 2 
+
+======================================
+
+1. ftserver 
+
+The following files are required to compile and run the ftserver
+
+ftserver.c 
+ftserver.h
+main.c 
+Makefile 
+
+Once the file are in the same directory, type “make” into the command line.  Once the program compiles you can run the 
+program by typing the following syntax: 
+
+ftserver [port number]
+
+This port number must be greater than 1024 and less than 65535.  This port number is used to create the connection 
+socket for the server.   
+
+A clean target was included in the makefile if you wish to remove the .o files and the executable file once you are finished testing the program.  
+
+=======================================
+
+2. ftclient.py
+
+Before you run this program you will need to ensure it’s an executable file.  
+
+In the terminal, type in the command “ls -pla” and verify ftclient.py is an executable file.  If not, i ask that 
+you please run the following command: 
+
+chmod +x ftclient.py
+
+This will convert it to an executable file.  
+
+After it’s been converted to an executable file (if necessary), if you wish to get LIST of the files in the 
+server’s directory you will need to execute the ftclient w/ the following syntax: 
+
+ftclient.py [server_host] [server_port_number] -l [data_connection_port_number]
+
+If you wish to get a FILE from the server’s directory, then you will need to execute the ftclient w/ the following 
+syntax: 
+
+ftclient.py [server_host] [server_port_number] -g [file_name] [data_connection_port_number]
+
+
+IMPORTANT NOTE: notice the different syntax depending on the request (did in order on what was written on the assignment
+sheet) 
+
+Also, [server_host] was either, example, flip2 or flip2.engr.oregonstate.edu
+
+=======================================
+
+Included in the .zip file are 5 plaintext files that i used to test my program.  Feel free to use these as well if you care to do so.  Thanks.  
+
+Joaquin
